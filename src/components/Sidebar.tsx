@@ -1,5 +1,5 @@
 import { Search, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { IGDBGameResult } from "../types";
 
 interface SidebarProps {

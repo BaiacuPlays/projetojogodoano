@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { IGDBGameResult, GOTYEntry } from "./types";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import { Download } from "lucide-react";
 
 const START_YEAR = 1991;
@@ -36,19 +36,20 @@ export default function App() {
       setSelectedYear(null);
       
       // Wait for React to render without selection state
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
-      const canvas = await html2canvas(exportRef.current, {
+      const dataUrl = await toPng(exportRef.current, {
+        cacheBust: true,
         backgroundColor: "#09090b", // Matches zinc-950
-        scale: 2, // Higher resolution
-        useCORS: true, // Needed for external images like IGDB covers
+        style: {
+          background: "#09090b",
+        }
       });
 
       setSelectedYear(originalSelectedYear); // Restore selection
 
-      const image = canvas.toDataURL("image/png");
       const a = document.createElement("a");
-      a.href = image;
+      a.href = dataUrl;
       a.download = "my-goty-list.png";
       a.click();
     } catch (err) {
@@ -99,7 +100,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto" ref={exportRef}>
           <header className="mb-12 text-center space-y-3 pt-8 sm:pt-4">
             <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-zinc-300 to-zinc-500 font-display tracking-tight">
-              My Jogo do ano
+              My Game of the Year
             </h1>
             <p className="text-zinc-500 font-medium tracking-wide text-sm font-display uppercase letter-spacing-2">
               {START_YEAR} — {END_YEAR}
@@ -132,6 +133,8 @@ export default function App() {
                           src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${entry.coverId}.jpg`}
                           alt={entry.gameName || "Game"}
                           className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? "scale-105" : "group-hover:scale-105"}`}
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
                         />
                         <div className={`absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/90 pointer-events-none transition-opacity duration-300 ${isSelected ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`} />
                         {isSelected && <div className="absolute inset-0 bg-indigo-500/20 mix-blend-overlay pointer-events-none" />}

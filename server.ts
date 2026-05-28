@@ -48,17 +48,33 @@ async function startServer() {
 
   // API Route for IGDB Search
   app.post("/api/igdb/search", async (req, res) => {
-    // using the provided keys from chat directly, prioritizing them over env vars which might be stale
-    const clientId = "1t7kot4q2e1e7cvssvgqh9mgo3r1da" || process.env.IGDB_CLIENT_ID;
-    const clientSecret = "9p9zvqkjcbcy4970fytfm1yk30hgjm" || process.env.IGDB_CLIENT_SECRET;
+    const envClientId = process.env.IGDB_CLIENT_ID;
+    const envClientSecret = process.env.IGDB_CLIENT_SECRET;
+    
+    const fallbackClientId = "1t7kot4q2e1e7cvssvgqh9mgo3r1da";
+    const fallbackClientSecret = "9p9zvqkjcbcy4970fytfm1yk30hgjm";
 
-    if (!clientId || !clientSecret) {
-      return res.status(500).json({ error: "Missing IGDB_CLIENT_ID or IGDB_CLIENT_SECRET in environment variables." });
+    let clientId = fallbackClientId;
+    let accessToken: string;
+
+    try {
+      if (!envClientId || !envClientSecret || envClientId.trim() === "" || envClientSecret.trim() === "" || envClientId.includes("YOUR_")) {
+        throw new Error("Environment variables are empty or contain placeholder values.");
+      }
+      // Try to authenticate using environment variables first
+      accessToken = await getIgdbToken(envClientId, envClientSecret);
+      clientId = envClientId;
+    } catch (error) {
+      console.warn("Failed to authorize with environmental keys, trying default fallback keys:", error);
+      try {
+        accessToken = await getIgdbToken(fallbackClientId, fallbackClientSecret);
+        clientId = fallbackClientId;
+      } catch (fallbackError: any) {
+        return res.status(500).json({ error: `IGDB Authorization Error: ${fallbackError.message || fallbackError}` });
+      }
     }
 
     try {
-      const accessToken = await getIgdbToken(clientId, clientSecret);
-      
       const { query, year } = req.body;
       let conditions = ["cover != null"];
       
